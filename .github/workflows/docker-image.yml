@@ -50,4 +50,4 @@ jobs:
 
     - name: Expose app via Minikube
       run: |
-        minikube service todo-nginx --url
+        minikube service nginx --url

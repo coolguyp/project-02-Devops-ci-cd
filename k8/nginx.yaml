@@ -1,0 +1,31 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: todo-nginx
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: todo-nginx
+  template:
+    metadata:
+      labels:
+        app: todo-nginx
+    spec:
+      containers:
+      - name: nginx
+        image: harshil403/todo-nginx:latest
+        ports:
+        - containerPort: 80
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: nginx
+spec:
+  type: NodePort
+  ports:
+    - port: 80
+      nodePort: 30080
+  selector:
+    app: todo-nginx

@@ -1,0 +1,46 @@
+name: CI-CD to Kubernetes (Self Hosted)
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  build-push-deploy:
+    runs-on: self-hosted
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+    # ---------------- LOGIN DOCKER ----------------
+    - name: Login to Docker Hub
+      run: |
+        echo "${{ secrets.DOCKER_PASSWORD }}" | docker login \
+          -u "${{ secrets.DOCKER_USERNAME }}" --password-stdin
+
+    # ---------------- BUILD & PUSH BACKEND ----------------
+    - name: Build & Push Backend
+      run: |
+        docker build -t harshil403/todo-backend:latest ./backend
+        docker push harshil403/todo-backend:latest
+
+    # ---------------- BUILD & PUSH FRONTEND ----------------
+    - name: Build & Push Frontend
+      run: |
+        docker build -t harshil403/todo-frontend:latest ./frontend
+        docker push harshil403/todo-frontend:latest
+
+    # ---------------- BUILD & PUSH NGINX ----------------
+    - name: Build & Push Nginx
+      run: |
+        docker build -t harshil403/todo-nginx:latest ./nginx
+        docker push harshil403/todo-nginx:latest
+
+    # ---------------- DEPLOY TO KUBERNETES ----------------
+    - name: Deploy to Kubernetes
+      run: |
+        kubectl apply -f k8s/
+        kubectl rollout restart deployment todo-backend
+        kubectl rollout restart deployment todo-frontend
+        kubectl rollout restart deployment todo-nginx

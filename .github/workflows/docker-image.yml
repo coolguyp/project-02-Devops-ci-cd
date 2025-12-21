@@ -48,10 +48,11 @@ jobs:
 
     - name: Sleep to stabilize services
       run: sleep 15
+        kubectl port-forward svc/grafana 3000:3000
 
     - name: Expose app via Minikube
       run: |
         minikube service nginx --url
         kubectl port-forward svc/prometheus 9090:9090
-        kubectl port-forward svc/grafana 3000:3000
+        
         

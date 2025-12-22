@@ -2,35 +2,49 @@ version: 0.2
 
 env:
   variables:
-    AWS_REGION: ap-south-1
     CLUSTER_NAME: todo-cluster-1
-    ECR_REPO: my-app
 
 phases:
   pre_build:
     commands:
-      - echo Logging in to Amazon ECR
+      - echo "Logging in to Amazon ECR"
+      - aws --version
+      - docker --version
       - aws ecr get-login-password --region $AWS_REGION | docker login --username AWS --password-stdin $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com
-      - IMAGE_URI=$AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/$ECR_REPO:latest
 
+      # Image URIs
+      - BACKEND_IMAGE=$AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/todo-backend:latest
+      - FRONTEND_IMAGE=$AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/todo-frontend:latest
+      - NGINX_IMAGE=$AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/todo-nginx:latest
 
-phases:
   build:
     commands:
-      - docker build -t $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/backend:latest ./backend
-      - docker build -t $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/frontend:latest ./frontend
-      - docker build -t $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/nginx:latest ./nginx
+      - echo "Building Docker images"
 
+      - docker build -t todo-backend ./backend
+      - docker tag todo-backend:latest $BACKEND_IMAGE
 
+      - docker build -t todo-frontend ./frontend
+      - docker tag todo-frontend:latest $FRONTEND_IMAGE
+
+      - docker build -t todo-nginx ./nginx
+      - docker tag todo-nginx:latest $NGINX_IMAGE
 
   post_build:
     commands:
-      - echo Pushing image to ECR
-      - docker push $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/backend:latest
-      - docker push $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/frontend:latest
-      - docker push $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/nginx:latest
+      - echo "Pushing Docker images to ECR"
 
-      - echo Deploying to EKS
+      - docker push $BACKEND_IMAGE
+      - docker push $FRONTEND_IMAGE
+      - docker push $NGINX_IMAGE
+
+      - echo "Deploying to EKS"
       - aws eks update-kubeconfig --region $AWS_REGION --name $CLUSTER_NAME
-      - sed -i "s|IMAGE_PLACEHOLDER|$IMAGE_URI|g" deployment.yaml
-      - kubectl apply -f deployment.yaml
+
+      # (Optional) replace image placeholders if used
+      - sed -i "s|BACKEND_IMAGE_PLACEHOLDER|$BACKEND_IMAGE|g" k8/backend-deployment.yaml
+      - sed -i "s|FRONTEND_IMAGE_PLACEHOLDER|$FRONTEND_IMAGE|g" k8/frontend-deployment.yaml
+      - sed -i "s|NGINX_IMAGE_PLACEHOLDER|$NGINX_IMAGE|g" k8/nginx-deployment.yaml
+
+      - kubectl apply -f k8/
+      - kubectl apply -f k8/monitoring/

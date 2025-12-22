@@ -14,8 +14,6 @@ spec:
         app: grafana
     spec:
       securityContext:
-        runAsUser: 472
-        runAsGruops: 472
         fsGroup: 472
       initContainers:
         - name: fix-permissions

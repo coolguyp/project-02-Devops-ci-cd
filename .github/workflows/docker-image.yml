@@ -13,6 +13,16 @@ jobs:
     - name: Checkout repository
       uses: actions/checkout@v4
 
+    - name: SonarQube Scan
+      uses: sonarsource/sonarqube-scan-action@v2
+      env:
+        SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+        SONAR_HOST_URL: http://192.168.49.1:9000
+      with:
+        args: >
+          -Dsonar.projectKey=project-01-devops-ci-cd
+          -Dsonar.projectName=project-01-DevOps-CI-CD
+          -Dsonar.sources=.
 
     - name: Login to Docker Hub
       run: |
@@ -22,18 +32,66 @@ jobs:
     - name: Build & Push Backend
       run: |
         docker build -t harshil403/todo-backend:latest ./backend
-        docker push harshil403/todo-backend:latest
+        
+    - name: Trivy Scan Backend Image
+      uses: aquasecurity/trivy-action@master
+      with:
+        image-ref: ${{ secrets.DOCKER_USERNAME }}/todo-backend:latest
+        format: table
+        scanners: vuln
+        vuln-type: os,library
+        severity: CRITICAL,HIGH
+        ignore-unfixed: true
+        exit-code: 0
+        timeout: 15m      
+      
+    - name: Push Backend Image
+      run: docker push harshil403/todo-backend:latest
 
     - name: Build & Push Frontend
       run: |
         docker build -t harshil403/todo-frontend:latest ./frontend
-        docker push harshil403/todo-frontend:latest
+        
+
+    - name: Trivy Scan Frontend Image
+      uses: aquasecurity/trivy-action@master
+      with:
+        image-ref: ${{ secrets.DOCKER_USERNAME }}/todo-frontend:latest
+        format: table
+        scanners: vuln
+        vuln-type: os,library
+        severity: CRITICAL,HIGH
+        ignore-unfixed: true
+        exit-code: 0
+        timeout: 15m
+     
+    - name: Push Frontend Image
+      run: docker push harshil403/todo-frontend:latest
+
+
+    
+   
 
     - name: Build & Push Nginx
       run: |
         docker build -t harshil403/todo-nginx:latest ./nginx
         docker push harshil403/todo-nginx:latest
+        
+    - name: Trivy Scan Nginx Image
+      uses: aquasecurity/trivy-action@master
+      with:
+        image-ref: ${{ secrets.DOCKER_USERNAME }}/todo-nginx:latest
+        format: table
+        scanners: vuln
+        vuln-type: os
+        severity: CRITICAL,HIGH
+        ignore-unfixed: true
+        exit-code: 0
+        timeout: 10m
 
+    - name: Push Nginx Image
+      run: docker push harshil403/todo-nginx:latest
+        
     - name: Deploy manifests
       run: |
         kubectl apply -f k8/

@@ -42,9 +42,9 @@ phases:
       - aws eks update-kubeconfig --region $AWS_REGION --name $CLUSTER_NAME
 
       # (Optional) replace image placeholders if used
-      - sed -i "s|BACKEND_IMAGE_PLACEHOLDER|$BACKEND_IMAGE|g" k8/backend-deployment.yaml
-      - sed -i "s|FRONTEND_IMAGE_PLACEHOLDER|$FRONTEND_IMAGE|g" k8/frontend-deployment.yaml
-      - sed -i "s|NGINX_IMAGE_PLACEHOLDER|$NGINX_IMAGE|g" k8/nginx-deployment.yaml
+      - sed -i "s|BACKEND_IMAGE_PLACEHOLDER|$BACKEND_IMAGE|g" k8/backend.yaml
+      - sed -i "s|FRONTEND_IMAGE_PLACEHOLDER|$FRONTEND_IMAGE|g" k8/frontend.yaml
+      - sed -i "s|NGINX_IMAGE_PLACEHOLDER|$NGINX_IMAGE|g" k8/nginx.yaml
 
       - kubectl apply -f k8/
       - kubectl apply -f k8/monitoring/

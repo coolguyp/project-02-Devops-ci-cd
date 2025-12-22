@@ -17,12 +17,15 @@ jobs:
       uses: sonarsource/sonarqube-scan-action@v2
       env:
         SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-        SONAR_HOST_URL: http://192.168.49.1:9000
+        SONAR_HOST_URL: http://192.168.49.1:9000   # self-hosted runner only
       with:
         args: >
           -Dsonar.projectKey=project-01-devops-ci-cd
           -Dsonar.projectName=project-01-DevOps-CI-CD
-          -Dsonar.sources=.
+          -Dsonar.sources=backend
+          -Dsonar.language=py
+          -Dsonar.exclusions=**/__pycache__/**,**/venv/**
+
 
     - name: Login to Docker Hub
       run: |

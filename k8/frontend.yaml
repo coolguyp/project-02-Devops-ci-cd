@@ -14,7 +14,7 @@ spec:
     spec:
       containers:
       - name: frontend
-        image: harshil403/todo-frontend:latest
+        image: FRONTEND_IMAGE_PLACEHOLDER
         ports:
         - containerPort: 3000
 ---

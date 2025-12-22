@@ -35,17 +35,25 @@ jobs:
     - name: Build & Push Backend
       run: |
         docker build -t harshil403/todo-backend:latest ./backend
+
+
+    - name: Cache Trivy DB
+      uses: actions/cache@v3
+      with:
+        path: ~/.cache/trivy
+        key: trivy-${{ runner.os }}
+
         
     - name: Trivy Scan Backend Image
       uses: aquasecurity/trivy-action@master
       with:
-        image-ref: ${{ secrets.DOCKER_USERNAME }}/todo-backend:latest
+        image-ref: harshil403/todo-backend:latest
         format: table
         scanners: vuln
         vuln-type: os,library
         severity: CRITICAL,HIGH
         ignore-unfixed: true
-        exit-code: 0
+        exit-code: 1
         timeout: 15m      
       
     - name: Push Backend Image
@@ -59,7 +67,7 @@ jobs:
     - name: Trivy Scan Frontend Image
       uses: aquasecurity/trivy-action@master
       with:
-        image-ref: ${{ secrets.DOCKER_USERNAME }}/todo-frontend:latest
+        image-ref: harshil403/todo-frontend:latest
         format: table
         scanners: vuln
         vuln-type: os,library
@@ -83,7 +91,7 @@ jobs:
     - name: Trivy Scan Nginx Image
       uses: aquasecurity/trivy-action@master
       with:
-        image-ref: ${{ secrets.DOCKER_USERNAME }}/todo-nginx:latest
+        image-ref: harshil403/todo-nginx:latest
         format: table
         scanners: vuln
         vuln-type: os

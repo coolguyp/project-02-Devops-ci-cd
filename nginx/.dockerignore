@@ -1,4 +1,4 @@
 *
 !Dockerfile
 !default.conf
-
+!nginx-main.conf

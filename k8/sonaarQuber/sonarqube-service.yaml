@@ -1,0 +1,13 @@
+# sonarqube-service.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: sonarqube-service
+  namespace: sonarqube
+spec:
+  type: LoadBalancer
+  selector:
+    app: sonarqube
+  ports:
+    - port: 80
+      targetPort: 9000

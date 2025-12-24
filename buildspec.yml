@@ -48,4 +48,8 @@ phases:
 #
       - kubectl apply -f k8/
       - kubectl get pods
+      - kubectl rollout restart deployment todo-backend
+      - kubectl rollout restart deployment todo-frontend
+      - kubectl rollout restart deployment todo-nginx
+
 

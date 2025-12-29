@@ -4,24 +4,26 @@ env:
   variables:
     CLUSTER_NAME: my-eks-cluster
 
-
 phases:
-install:
+  install:
+    commands:
+      - echo "Installing required tools"
+      - aws --version
+      - docker --version
+
   pre_build:
     commands:
       - echo "Logging in to Amazon ECR"
-      - aws --version
-      - docker --version
       - aws ecr get-login-password --region $AWS_REGION | docker login --username AWS --password-stdin $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com
 
-      - BACKEND_IMAGE=$AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/todo-backend:latest
-      - FRONTEND_IMAGE=$AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/todo-frontend:latest
-      - NGINX_IMAGE=$AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/todo-nginx:latest
+      - export BACKEND_IMAGE=$AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/todo-backend:latest
+      - export FRONTEND_IMAGE=$AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/todo-frontend:latest
+      - export NGINX_IMAGE=$AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/todo-nginx:latest
 
   build:
     commands:
-      ### ---------------- DOCKER BUILD ----------------
       - echo "Building Docker images"
+
       - docker build -t todo-backend ./backend
       - docker tag todo-backend:latest $BACKEND_IMAGE
 
@@ -34,6 +36,7 @@ install:
   post_build:
     commands:
       - echo "Pushing Docker images to ECR"
+
       - docker push $BACKEND_IMAGE
       - docker push $FRONTEND_IMAGE
       - docker push $NGINX_IMAGE

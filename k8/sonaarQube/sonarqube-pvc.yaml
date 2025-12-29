@@ -4,8 +4,9 @@ kind: PersistentVolumeClaim
 metadata:
   name: sonarqube-pvc
 spec:
+  storageClassName: gp3-wffc
   accessModes:
     - ReadWriteOnce
   resources:
     requests:
-      storage: 10Gi
+      storage: 1Gi

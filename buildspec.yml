@@ -3,6 +3,7 @@ version: 0.2
 env:
   variables:
     CLUSTER_NAME: my-eks-cluster
+    SONAR_HOST_URL: http://<SONARQUBE-ELB-DNS>:9000   ### ADD THIS
     SONAR_TOKEN: squ_8797ba9e7009800ad5ffd6c16adbd3df3932379d
 
 phases:
@@ -14,6 +15,8 @@ phases:
       - curl -sSLo sonar-scanner.zip https://binaries.sonarsource.com/Distribution/sonar-scanner-cli/sonar-scanner-cli-5.0.1.3006-linux.zip
       - unzip sonar-scanner.zip
       - export PATH=$PATH:$(pwd)/sonar-scanner-5.0.1.3006-linux/bin
+      - sonar-scanner --version   ### VERIFY INSTALL
+
   pre_build:
     commands:
       - echo "Logging in to Amazon ECR"
@@ -21,15 +24,36 @@ phases:
       - docker --version
       - aws ecr get-login-password --region $AWS_REGION | docker login --username AWS --password-stdin $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com
 
-      # Image URIs
       - BACKEND_IMAGE=$AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/todo-backend:latest
       - FRONTEND_IMAGE=$AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/todo-frontend:latest
       - NGINX_IMAGE=$AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/todo-nginx:latest
 
   build:
     commands:
-      - echo "Building Docker images"
+      ### ---------------- SONARQUBE BACKEND SCAN ----------------
+      - echo "Running SonarQube scan for backend"
+      - cd backend
+      - sonar-scanner \
+          -Dsonar.projectKey=todo-backend \
+          -Dsonar.projectName=todo-backend \
+          -Dsonar.sources=. \
+          -Dsonar.host.url=$SONAR_HOST_URL \
+          -Dsonar.login=$SONAR_TOKEN
+      - cd ..
 
+      ### ---------------- SONARQUBE FRONTEND SCAN ----------------
+      - echo "Running SonarQube scan for frontend"
+      - cd frontend
+      - sonar-scanner \
+          -Dsonar.projectKey=todo-frontend \
+          -Dsonar.projectName=todo-frontend \
+          -Dsonar.sources=src \
+          -Dsonar.host.url=$SONAR_HOST_URL \
+          -Dsonar.login=$SONAR_TOKEN
+      - cd ..
+
+      ### ---------------- DOCKER BUILD ----------------
+      - echo "Building Docker images"
       - docker build -t todo-backend ./backend
       - docker tag todo-backend:latest $BACKEND_IMAGE
 
@@ -42,23 +66,13 @@ phases:
   post_build:
     commands:
       - echo "Pushing Docker images to ECR"
-
       - docker push $BACKEND_IMAGE
       - docker push $FRONTEND_IMAGE
       - docker push $NGINX_IMAGE
 
       - echo "Deploying to EKS"
       - aws eks update-kubeconfig --region $AWS_REGION --name $CLUSTER_NAME
-#
- #     # (Optional) replace image placeholders if used
-  #    - sed -i "s|BACKEND_IMAGE_PLACEHOLDER|$BACKEND_IMAGE|g" k8/backend.yaml
-   #   - sed -i "s|FRONTEND_IMAGE_PLACEHOLDER|$FRONTEND_IMAGE|g" k8/frontend.yaml
-    #  - sed -i "s|NGINX_IMAGE_PLACEHOLDER|$NGINX_IMAGE|g" k8/nginx.yaml
-#
       - kubectl apply -f k8/
-      - kubectl get pods
       - kubectl rollout restart deployment todo-backend
       - kubectl rollout restart deployment todo-frontend
       - kubectl rollout restart deployment todo-nginx
-
-

@@ -9,19 +9,17 @@ COPY . .
 RUN npm run build
 
 # ---------- Runtime ----------
-FROM nginx:alpine
+FROM node:18-alpine
+WORKDIR /app
 
-# Remove default config
-RUN rm -rf /etc/nginx/conf.d/*
+# Install only what is needed to serve static files
+RUN npm install -g serve \
+ && rm -rf /root/.npm /tmp/*
 
-# Use your nginx config
-COPY nginx/nginx-main.conf /etc/nginx/nginx.conf
+COPY --from=builder /app/build ./build
 
-# Copy frontend build
-COPY --from=builder /app/build /usr/share/nginx/html
-
-EXPOSE 80
-CMD ["nginx", "-g", "daemon off;"]
+EXPOSE 3000
+CMD ["serve", "-s", "build", "-l", "3000"]
 
 ## -------- Build stage --------
 #FROM public.ecr.aws/docker/library/node:18-alpine AS builder

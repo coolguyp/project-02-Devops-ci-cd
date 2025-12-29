@@ -1,4 +1,4 @@
-# ---------- Build ----------
+# ---------- Build stage ----------
 FROM node:18-alpine AS builder
 WORKDIR /app
 
@@ -8,17 +8,28 @@ RUN npm install
 COPY . .
 RUN npm run build
 
-# ---------- Runtime ----------
+# ---------- Runtime stage ----------
 FROM node:18-alpine
 WORKDIR /app
-
-RUN npm install -g serve \
- && rm -rf /root/.npm /tmp/*
 
 COPY --from=builder /app/build ./build
 
 EXPOSE 3000
-CMD ["serve", "-s", "build", "-l", "3000"]
+
+CMD ["node", "-e", "\
+const http=require('http');\
+const fs=require('fs');\
+const path=require('path');\
+const base=path.join(process.cwd(),'build');\
+http.createServer((req,res)=>{\
+  const p=req.url==='/'?'index.html':req.url;\
+  const f=path.join(base,p);\
+  fs.readFile(f,(e,d)=>{\
+    if(e){res.writeHead(404);res.end('Not Found');return;}\
+    res.end(d);\
+  });\
+}).listen(3000);\
+"]
 
 ## -------- Build stage --------
 #FROM public.ecr.aws/docker/library/node:18-alpine AS builder

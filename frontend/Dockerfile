@@ -12,7 +12,6 @@ RUN npm run build
 FROM node:18-alpine
 WORKDIR /app
 
-# Install only what is needed to serve static files
 RUN npm install -g serve \
  && rm -rf /root/.npm /tmp/*
 

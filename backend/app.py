@@ -100,5 +100,16 @@ def todos():
 def health():
     return jsonify({"status": "UP"})
 
+@app.route("/vuln")
+def vuln():
+    title = request.args.get("title")
+
+    # ❌ INTENTIONAL SQL INJECTION (FOR CodeQL TEST ONLY)
+    query = f"SELECT * FROM todo WHERE title = '{title}'"
+    result = db.session.execute(query)
+
+    return jsonify([dict(row) for row in result])
+
+
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5000)

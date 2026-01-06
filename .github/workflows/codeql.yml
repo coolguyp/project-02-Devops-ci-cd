@@ -1,4 +1,4 @@
-name: CodeQL Security Scan
+name: Security & Code Quality Scan
 
 on:
   push:
@@ -10,6 +10,7 @@ jobs:
   analyze:
     name: Analyze source code
     runs-on: ubuntu-latest
+
     permissions:
       actions: read
       contents: read
@@ -18,18 +19,23 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        language: [ 'python', 'javascript' ]
+        language: [ "python", "javascript" ]
 
     steps:
+      # --------------------
+      # Checkout Code
+      # --------------------
       - name: Checkout repository
         uses: actions/checkout@v4
 
+      # --------------------
+      # CodeQL Scan
+      # --------------------
       - name: Initialize CodeQL
         uses: github/codeql-action/init@v3
         with:
           languages: ${{ matrix.language }}
 
-      # Autobuild is required for JS; Python doesn't need compilation
       - name: Autobuild
         uses: github/codeql-action/autobuild@v3
 
@@ -37,3 +43,20 @@ jobs:
         uses: github/codeql-action/analyze@v3
         with:
           category: "/language:${{ matrix.language }}"
+
+      # --------------------
+      # SonarQube Scan
+      # --------------------
+      - name: SonarQube Scan
+        uses: sonarsource/sonarqube-scan-action@v2
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+          SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
+
+      # --------------------
+      # Quality Gate
+      # --------------------
+      - name: SonarQube Quality Gate
+        uses: sonarsource/sonarqube-quality-gate-action@v1
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}

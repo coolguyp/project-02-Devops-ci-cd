@@ -6,9 +6,12 @@ on:
   pull_request:
     branches: [ "main" ]
 
+# -----------------------------
+# JOB 1: CodeQL Security Scan
+# -----------------------------
 jobs:
-  analyze:
-    name: Analyze source code
+  codeql:
+    name: CodeQL Security Scan
     runs-on: ubuntu-latest
 
     permissions:
@@ -22,15 +25,9 @@ jobs:
         language: [ "python", "javascript" ]
 
     steps:
-      # --------------------
-      # Checkout Code
-      # --------------------
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      # --------------------
-      # CodeQL Scan
-      # --------------------
       - name: Initialize CodeQL
         uses: github/codeql-action/init@v3
         with:
@@ -44,18 +41,24 @@ jobs:
         with:
           category: "/language:${{ matrix.language }}"
 
-      # --------------------
-      # SonarQube Scan
-      # --------------------
+  # -----------------------------
+  # JOB 2: SonarQube Scan
+  # -----------------------------
+  sonarqube:
+    name: SonarQube Code Quality Scan
+    runs-on: ubuntu-latest
+    needs: codeql   # run after CodeQL
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
       - name: SonarQube Scan
         uses: sonarsource/sonarqube-scan-action@v2
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
           SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
 
-      # --------------------
-      # Quality Gate
-      # --------------------
       - name: SonarQube Quality Gate
         uses: sonarsource/sonarqube-quality-gate-action@v1
         env:

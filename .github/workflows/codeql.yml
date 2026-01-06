@@ -11,25 +11,24 @@ jobs:
     runs-on: self-hosted
 
     steps:
+      # --------------------
       # Checkout code
+      # --------------------
       - name: Checkout repository
         uses: actions/checkout@v4
         with:
-          fetch-depth: 0   # Important for better analysis
+          fetch-depth: 0
 
-      # SonarQube Scan
-      - name: SonarQube Scan
-        uses: sonarsource/sonarqube-scan-action@v2
-        with:
-          args: >
-            -Dsonar.projectKey=My-Project-02
-            -Dsonar.projectName=My-Project-02
-        env:
-          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-          SONAR_HOST_URL: http://localhost:9000
+      # --------------------
+      # SonarQube Scan (LOCAL CLI)
+      # --------------------
+      - name: SonarQube Scan (local CLI)
+        run: |
+          sonar-scanner \
+            -Dsonar.projectKey=My-Project-02 \
+            -Dsonar.projectName=My-Project-02 \
+            -Dsonar.sources=. \
+            -Dsonar.host.url=http://localhost:9000 \
+            -Dsonar.login=${{ secrets.SONAR_TOKEN }}
 
-      # Quality Gate (optional but recommended)
-      - name: SonarQube Quality Gate
-        uses: sonarsource/sonarqube-quality-gate-action@v1
-        env:
-          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+      # --------------------

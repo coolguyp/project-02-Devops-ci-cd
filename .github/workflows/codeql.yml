@@ -37,17 +37,17 @@ jobs:
 
           with open("scan-result.json") as f:
               data = json.load(f)
-              
+
           results = data.get("results", {})
 
-        if results:
-            print("\n❌ Secrets found in repository!\n")
-            for file, issues in results.items():
-                print(f"📄 File: {file}")
-                for item in issues:
-                    print(f"   ➤ Line: {item.get('line_number')}")
-                    print(f"   ➤ Type: {item.get('type')}")
-                    print(f"   ➤ Hash: {item.get('hashed_secret')}\n")
+          if results:
+              print("\n❌ Secrets found in repository!\n")
+              for file, issues in results.items():
+                  print(f"📄 File: {file}")
+                  for item in issues:
+                      print(f"   ➤ Line: {item.get('line_number')}")
+                      print(f"   ➤ Type: {item.get('type')}")
+                      print(f"   ➤ Hash: {item.get('hashed_secret')}\n")
               sys.exit(1)
           else:
               print("✅ No secrets found.")

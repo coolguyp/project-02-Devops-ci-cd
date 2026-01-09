@@ -4,6 +4,9 @@ on:
   push:
     branches:
       - main
+  pull_request:
+    branches:
+      - main
 
 jobs:
   build:
@@ -11,24 +14,39 @@ jobs:
     runs-on: self-hosted
 
     steps:
-      # --------------------
+      # -------------------------
       # Checkout code
-      # --------------------
+      # -------------------------
       - name: Checkout repository
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
-      # --------------------
-      # SonarQube Scan (LOCAL CLI)
-      # --------------------
-      - name: SonarQube Scan (local CLI)
-        run: |
-          sonar-scanner \
-            -Dsonar.projectKey=My-Project-02 \
-            -Dsonar.projectName=My-Project-02 \
-            -Dsonar.sources=. \
-            -Dsonar.host.url=http://localhost:9000 \
-            -Dsonar.login=${{ secrets.SONAR_TOKEN }}
+      # -------------------------
+      # Setup Python
+      # -------------------------
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.x"
 
-      # --------------------
+      # -------------------------
+      # Install detect-secrets
+      # -------------------------
+      - name: Install detect-secrets
+        run: |
+          pip install detect-secrets
+
+      # -------------------------
+      # 🔐 SECRET SCAN (FAIL CI/CD IF FOUND)
+      # -------------------------
+      - name: Run secret scan
+        run: |
+          detect-secrets scan --baseline .secrets.baseline --fail-on-unaudited
+
+      # -------------------------
+      # Your normal build steps
+      # -------------------------
+      - name: Continue build
+        run: |
+          echo "✅ No secrets found. Build can continue..."

@@ -29,8 +29,22 @@ jobs:
       # 🔐 SECRET SCAN (FAIL CI/CD IF FOUND)
       # -------------------------
       - name: Run secret scan
-        run: |
-          detect-secrets scan --baseline .secrets.baseline --fail-on-unaudited
+  run: |
+    detect-secrets scan . > scan-result.json
+
+    python3 - << 'EOF'
+import json, sys
+
+with open("scan-result.json") as f:
+    data = json.load(f)
+
+if data.get("results"):
+    print("❌ Secrets found in repository!")
+    sys.exit(1)
+else:
+    print("✅ No secrets found.")
+EOF
+
 
       # -------------------------
       # Your normal build step

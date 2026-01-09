@@ -38,7 +38,7 @@ jobs:
           with open("scan-result.json") as f:
               data = json.load(f)
               
-           results = data.get("results", {})
+          results = data.get("results", {})
 
         if results:
             print("\n❌ Secrets found in repository!\n")

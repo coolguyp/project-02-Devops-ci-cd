@@ -8,19 +8,33 @@ on:
 
 jobs:
   build:
-    runs-on: ubuntu-latest   # use GitHub runner (faster than self-hosted usually)
+    runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout code
+      # -------------------------
+      # Checkout code
+      # -------------------------
+      - name: Checkout repository
         uses: actions/checkout@v4
 
-      # 🔐 FAST secret scan (no Python install, no pip)
-      - name: Secret scan with detect-secrets
-        uses: reviewdog/action-detect-secrets@v2
-        with:
-          reporter: github-check
-          fail-on-findings: true
+      # -------------------------
+      # Install detect-secrets (fast)
+      # -------------------------
+      - name: Install detect-secrets
+        run: |
+          python3 -m pip install --upgrade pip
+          pip install detect-secrets
 
-      # Your build step (runs only if scan passes)
+      # -------------------------
+      # 🔐 SECRET SCAN (FAIL CI/CD IF FOUND)
+      # -------------------------
+      - name: Run secret scan
+        run: |
+          detect-secrets scan --baseline .secrets.baseline --fail-on-unaudited
+
+      # -------------------------
+      # Your normal build step
+      # -------------------------
       - name: Continue build
-        run: echo "✅ No secrets found. Build continues..."
+        run: |
+          echo "✅ No secrets found. Build continues..."

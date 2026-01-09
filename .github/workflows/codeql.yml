@@ -2,51 +2,25 @@ name: Build
 
 on:
   push:
-    branches:
-      - main
+    branches: [ "main" ]
   pull_request:
-    branches:
-      - main
+    branches: [ "main" ]
 
 jobs:
   build:
-    name: Build
-    runs-on: self-hosted
+    runs-on: ubuntu-latest   # use GitHub runner (faster than self-hosted usually)
 
     steps:
-      # -------------------------
-      # Checkout code
-      # -------------------------
-      - name: Checkout repository
+      - name: Checkout code
         uses: actions/checkout@v4
+
+      # 🔐 FAST secret scan (no Python install, no pip)
+      - name: Secret scan with detect-secrets
+        uses: reviewdog/action-detect-secrets@v2
         with:
-          fetch-depth: 0
+          reporter: github-check
+          fail-on-findings: true
 
-      # -------------------------
-      # Setup Python
-      # -------------------------
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: "3.x"
-
-      # -------------------------
-      # Install detect-secrets
-      # -------------------------
-      - name: Install detect-secrets
-        run: |
-          pip install detect-secrets
-
-      # -------------------------
-      # 🔐 SECRET SCAN (FAIL CI/CD IF FOUND)
-      # -------------------------
-      - name: Run secret scan
-        run: |
-          detect-secrets scan --baseline .secrets.baseline --fail-on-unaudited
-
-      # -------------------------
-      # Your normal build steps
-      # -------------------------
+      # Your build step (runs only if scan passes)
       - name: Continue build
-        run: |
-          echo "✅ No secrets found. Build can continue..."
+        run: echo "✅ No secrets found. Build continues..."

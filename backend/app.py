@@ -1,24 +1,23 @@
 from flask import Flask, request, jsonify
 from prometheus_flask_exporter import PrometheusMetrics
-
 import os
 import sys
 import time
-import subprocess   # ❌ for command injection demo
 
-# ✅ make sure python can find model.py
+# make sure python can find model.py
 sys.path.append("/app")
 
 from model import db, Todo
 
 app = Flask(__name__)
-
 metrics = PrometheusMetrics(app)
 
 # -------------------------------------------------
-# ❌ HARD-CODED SECRET (FOR SCAN TEST ONLY)
+# ✅ SECURE CONFIGURATION
 # -------------------------------------------------
-API_SECRET_KEY = "my-super-secret-password"   # SonarQube will flag this
+
+# Load secrets from environment variables
+API_SECRET_KEY = os.getenv("API_SECRET_KEY", "change-this-in-prod")
 
 @app.route("/")
 def home():
@@ -54,7 +53,7 @@ for i in range(10):
         time.sleep(3)
 
 # -------------------------------------------------
-# NORMAL TODOS API
+# ✅ SAFE TODOS API
 # -------------------------------------------------
 @app.route("/api/todos", methods=["GET", "POST"])
 @app.route("/todos", methods=["GET", "POST"])
@@ -65,7 +64,13 @@ def todos():
         if not data or "title" not in data:
             return jsonify({"error": "title is required"}), 400
 
-        todo = Todo(title=data["title"])
+        # Basic input validation
+        title = str(data["title"]).strip()
+
+        if len(title) > 255:
+            return jsonify({"error": "title too long"}), 400
+
+        todo = Todo(title=title)
         db.session.add(todo)
         db.session.commit()
         return jsonify({"message": "Todo added"}), 201
@@ -74,39 +79,40 @@ def todos():
     return jsonify([t.to_dict() for t in todos])
 
 # -------------------------------------------------
-# ❌ SQL INJECTION VULNERABILITY
+# ✅ SAFE SEARCH API (NO SQL INJECTION)
 # -------------------------------------------------
-@app.route("/vuln/sql")
-def sql_injection_demo():
-    title = request.args.get("title")
+@app.route("/search")
+def safe_search():
+    title = request.args.get("title", "")
 
-    # ❌ INTENTIONAL SQL INJECTION
-    query = f"SELECT * FROM todo WHERE title = '{title}'"
-    result = db.session.execute(query)
+    # Use ORM filter instead of raw SQL
+    results = Todo.query.filter(Todo.title.like(f"%{title}%")).all()
 
-    return jsonify([dict(row) for row in result])
-
-# -------------------------------------------------
-# ❌ COMMAND INJECTION VULNERABILITY
-# -------------------------------------------------
-@app.route("/vuln/cmd")
-def command_injection_demo():
-    cmd = request.args.get("cmd")
-
-    # ❌ INTENTIONAL COMMAND INJECTION
-    output = subprocess.getoutput(cmd)
-
-    return jsonify({"output": output})
+    return jsonify([t.to_dict() for t in results])
 
 # -------------------------------------------------
-# ❌ PATH TRAVERSAL
+# ✅ SAFE FILE READ (NO PATH TRAVERSAL)
 # -------------------------------------------------
-@app.route("/vuln/file")
-def file_read_demo():
+@app.route("/files")
+def safe_file_read():
     filename = request.args.get("file")
 
-    # ❌ INTENTIONAL PATH TRAVERSAL
-    with open(filename, "r") as f:
+    if not filename:
+        return jsonify({"error": "file parameter required"}), 400
+
+    # Allow only files inside a safe directory
+    SAFE_DIR = "/app/safe_files"
+
+    safe_path = os.path.join(SAFE_DIR, filename)
+    safe_path = os.path.realpath(safe_path)
+
+    if not safe_path.startswith(os.path.realpath(SAFE_DIR)):
+        return jsonify({"error": "Invalid file path"}), 403
+
+    if not os.path.exists(safe_path):
+        return jsonify({"error": "File not found"}), 404
+
+    with open(safe_path, "r") as f:
         content = f.read()
 
     return jsonify({"content": content})
@@ -119,8 +125,8 @@ def health():
     return jsonify({"status": "UP"})
 
 # -------------------------------------------------
-# ❌ INSECURE DEBUG MODE
+# ✅ PRODUCTION SAFE MODE
 # -------------------------------------------------
 if __name__ == "__main__":
-    # ❌ Debug mode exposes stack traces
-    app.run(host="0.0.0.0", port=5000, debug=True)
+    # Debug OFF for security
+    app.run(host="0.0.0.0", port=5000, debug=False)
